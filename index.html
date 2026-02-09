@@ -12,6 +12,7 @@
     <style>
         :root {
             --primary-color: #00d4ff;
+            --warning-color: #ffc107;
             --bg-color: #0a0b10;
             --card-bg: rgba(255, 255, 255, 0.05);
             --text-color: #e0e0e0;
@@ -24,9 +25,21 @@
             background-image: radial-gradient(circle at 50% 50%, #16213e 0%, #0a0b10 100%);
             color: var(--text-color);
             line-height: 1.6;
+            overflow-x: hidden; /* Evita barra de rolagem lateral indesejada */
         }
 
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        /* --- NOVO: Canvas do Background --- */
+        #data-network {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Fica atrás de tudo */
+            pointer-events: none; /* Permite clicar nos itens por cima dele */
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
 
         /* Lógica de Idioma */
         .lang-en { display: none; }
@@ -45,7 +58,9 @@
             cursor: pointer;
             z-index: 1000;
             box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+            transition: transform 0.2s;
         }
+        #lang-switch:hover { transform: scale(1.1); }
 
         /* Header e Foto de Perfil */
         header { text-align: center; padding: 60px 20px; }
@@ -53,10 +68,10 @@
         .profile-img {
             width: 160px;
             height: 160px;
-            border-radius: 50%; /* Deixa a foto redonda */
-            object-fit: cover; /* Ajusta a imagem sem esticar */
-            border: 4px solid var(--primary-color); /* Borda Neon */
-            box-shadow: 0 0 25px rgba(0, 212, 255, 0.3); /* Brilho */
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.3);
             margin-bottom: 20px;
             transition: transform 0.3s ease;
         }
@@ -66,11 +81,11 @@
         h1 { font-size: 2.5rem; color: var(--primary-color); letter-spacing: 2px; }
         .subtitle { font-size: 1.1rem; opacity: 0.8; margin-top: 10px; }
 
-        /* Estilo do Botão LinkedIn (Alinhamento Ícone + Texto) */
+        /* Botão LinkedIn */
         .btn-contact {
-            display: inline-flex; /* Alinha ícone e texto na mesma linha */
-            align-items: center;  /* Centraliza verticalmente */
-            gap: 10px;            /* Espaço entre o ícone e o texto */
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
             background: var(--primary-color);
             color: #000;
             padding: 12px 25px;
@@ -82,8 +97,8 @@
             font-size: 1rem;
         }
         
-        .btn-contact i { font-size: 1.2rem; } /* Tamanho do ícone do LinkedIn */
-        .btn-contact:hover { box-shadow: 0 0 20px var(--primary-color); opacity: 0.9; }
+        .btn-contact i { font-size: 1.2rem; }
+        .btn-contact:hover { box-shadow: 0 0 20px var(--primary-color); opacity: 0.9; transform: translateY(-2px); }
 
         /* Cards */
         .card {
@@ -101,26 +116,148 @@
         .item-list { border-left: 2px solid var(--primary-color); padding-left: 20px; margin-left: 10px; }
         .item { position: relative; margin-bottom: 25px; }
         .item::before {
-            content: ""; position: absolute; left: -31px; top: 5px;
+            content: ""; position: absolute; 
+            left: -30px;
+            top: 5px;
             width: 20px; height: 20px; background: var(--bg-color);
             border: 2px solid var(--primary-color); border-radius: 50%;
+            box-sizing: border-box;
         }
         .item h3 { color: #fff; font-size: 1.2rem; }
         .item .date { font-size: 0.9rem; color: var(--primary-color); font-weight: bold; margin-bottom: 5px; display: block; }
         .item .company { font-style: italic; color: #aaa; margin-bottom: 10px; display: block; }
 
-        /* Grids */
-        .cert-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
-        .cert-item { text-align: center; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 10px; border: 1px solid rgba(0, 212, 255, 0.1); }
-        .cert-img { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--primary-color); margin-top: 10px;}
+        /* Grids de Certificações */
+        .cert-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        
+        .cert-item { 
+            text-align: center; 
+            background: rgba(0, 0, 0, 0.3); 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
 
+        .cert-item:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .cert-img { 
+            width: 100%; 
+            height: 200px;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 5px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            margin-top: 10px;
+        }
+
+        /* --- ESTILOS NOVOS: EM PROGRESSO --- */
+        .cert-item.in-progress {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            cursor: default;
+        }
+
+        .cert-item.in-progress:hover {
+            border-color: var(--warning-color);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.1);
+        }
+
+        .status-badge {
+            background: var(--warning-color);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+
+        .cert-placeholder {
+            width: 100%;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 3rem;
+        }
+        
+        /* Skills */
         .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        .skill-item { background: rgba(0, 212, 255, 0.1); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid rgba(0, 212, 255, 0.2); }
+        .skill-item { 
+            background: rgba(0, 212, 255, 0.1); 
+            padding: 10px; 
+            border-radius: 8px; 
+            text-align: center; 
+            border: 1px solid rgba(0, 212, 255, 0.2); 
+            transition: 0.3s;
+        }
+        .skill-item:hover { background: rgba(0, 212, 255, 0.2); border-color: var(--primary-color); }
+
+        /* ESTILOS DO MODAL */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.95); 
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show { display: flex; opacity: 1; }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-modal:hover { color: var(--primary-color); }
+        .click-hint { font-size: 0.8rem; color: #aaa; margin-top: 5px; display: block;}
+
     </style>
 </head>
 <body>
 
+    <canvas id="data-network"></canvas>
+
     <button id="lang-switch" onclick="toggleLanguage()">PT / EN</button>
+
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
 
     <div class="container">
         <header>
@@ -154,14 +291,16 @@
             </h2>
             <div class="item-list">
                 <div class="item">
-                    <span class="date">2025 -<span class="lang-pt">Presente</span><span class="lang-en">Present</span></span>
+                    <span class="date">2025 - <span class="lang-pt">Presente</span><span class="lang-en">Present</span></span>
                     <h3> Assistente de TI</h3>
                     <span class="company">Usina Vista Alegre</span>
                     <p class="lang-pt">Texto</p>
                     <p class="lang-en">Text</p>
                 </div>
+            </div>
+            <div class="item-list">    
                 <div class="item">
-                    <span class="date">2022 - 2025<span class="lang-pt"></span><span class="lang-en"></span></span>
+                    <span class="date">2022 - 2025</span>
                     <h3>Analista administrativo de redes</h3>
                     <span class="company">Mhnet Telecom</span>
                     <p class="lang-pt">Texto</p>
@@ -202,14 +341,60 @@
         </section>
 
         <section class="card">
-            <h2><i class="fas fa-shield-alt"></i> Core Skills</h2>
+            <h2><i class="fas fa-shield-alt"></i>
+                <span class="lang-pt">Competências</span>
+                <span class="lang-en">Core Skills</span>
+            </h2>
             <div class="skills-grid">
-                <div class="skill-item">Cisco / Switching</div>
-                <div class="skill-item">Fortinet / pfSense</div>
-                <div class="skill-item">Penetration Testing</div>
-                <div class="skill-item">VPN / IPsec</div>
-                <div class="skill-item">Wireshark / SIEM</div>
-                <div class="skill-item">Linux Hardening</div>
+                <div class="skill-item">
+                    <span class="lang-pt">Roteamento e Comutação</span>
+                    <span class="lang-en">Routing & Switching</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Configuração de VLANs e Trunks</span>
+                    <span class="lang-en">VLAN & Trunking Configuration</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Protocolo TCP/IP, DNS e DHCP</span>
+                    <span class="lang-en">TCP/IP, DNS & DHCP Protocols</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Análise de Tráfego (Wireshark)</span>
+                    <span class="lang-en">Network Traffic Analysis (Wireshark)</span>
+                </div>
+
+                <div class="skill-item">
+                    <span class="lang-pt">Monitoramento de Redes (Zabbix/Nagios)</span>
+                    <span class="lang-en">Network Monitoring (Zabbix/Nagios)</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Redes Sem Fio Corporativas</span>
+                    <span class="lang-en">Enterprise Wireless Networks</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Administração Windows Server (AD/GPO)</span>
+                    <span class="lang-en">Windows Server Admin (AD/GPO)</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Cabeamento Estruturado</span>
+                    <span class="lang-en">Structured Cabling</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Manutenção de Hardware e Radiocomunicação</span>
+                    <span class="lang-en">Hardware Maintenance & Radio Comm.</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Administração de Firewalls (Fortinet)</span>
+                    <span class="lang-en">Firewall Administration (Fortinet)</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Testes de Intrusão (Pentest)</span>
+                    <span class="lang-en">Penetration Testing</span>
+                </div>
+                <div class="skill-item">
+                    <span class="lang-pt">Segurança de Endpoint (EDR/Antivírus)</span>
+                    <span class="lang-en">Endpoint Security (EDR/Antivirus)</span>
+                </div>
             </div>
         </section>
 
@@ -219,14 +404,88 @@
                 <span class="lang-en">Certifications</span>
             </h2>
             <div class="cert-grid">
-                <div class="cert-item">
-                    <h3>FCSS - Enterprise Firewall 7.4 Administrator</h3>
+                
+                <div class="cert-item in-progress">
+                    <div class="status-badge">
+                        <span class="lang-pt">Em Progresso</span>
+                        <span class="lang-en">In Progress</span>
+                    </div>
+                    <h3>Fortinet - Fortgate</h3> 
+                    <div class="cert-placeholder">
+                        <i class="fas fa-graduation-cap"></i> 
+                    </div>
+                    <span class="click-hint">
+                        <span class="lang-pt">Conclusão estimada: Fev/2026</span>
+                        <span class="lang-en">Est. completion: Fev/2026</span>
+                    </span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado FCSS.jpg')">
+                    <h3>FCSS - Firewall 7.4</h3>
                     <img src="Certificados/Certificado FCSS.jpg" alt="Certificado FCSS" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
                 </div>
-                <div class="cert-item">
-                    <h3>FEBRABAM</h3>
+                
+                <div class="cert-item" onclick="openModal('Certificados/Certificado FEBRABAN.jpg')">
+                    <h3>FEBRABAM - Cyber Academy</h3>
                     <img src="Certificados/Certificado FEBRABAN.jpg" alt="Certificado FEBRABAM" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
                 </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Azure Avançado.jpg')">
+                    <h3>Azure Avançado</h3>
+                    <img src="Certificados/Certificado Azure Avançado.jpg" alt="Certificado Azure Avançado" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Azure Essencial.jpg')">
+                    <h3>Azure Essencial</h3>
+                    <img src="Certificados/Certificado Azure Essencial.jpg" alt="Certificado Azure Essencial" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado cibersegurança 02.jpg')">
+                    <h3>Cibersegurança #02</h3>
+                    <img src="Certificados/Certificado cibersegurança 02.jpg" alt="Cibersegurança 2" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Fundamentos IA.jpg')">
+                    <h3>Fundamento de IA</h3>
+                    <img src="Certificados/Certificado Fundamentos IA.jpg" alt="Fundamento de IA" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Pentest.jpg')">
+                    <h3>Pentest na Prática</h3>
+                    <img src="Certificados/Certificado Pentest.jpg" alt="Pentest" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Wifi Hacking.jpg')">
+                    <h3>Wifi Hacking em Redes WPA2</h3>
+                    <img src="Certificados/Certificado Wifi Hacking.jpg" alt="wifi hacking" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i></span>  
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Linux iniciante.jpg')">
+                    <h3>Linux para Iniciantes</h3>
+                    <img src="Certificados/Certificado Linux iniciante.jpg" alt="Linux para Iniciantes" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado Prompts.jpg')">
+                    <h3>Criando Prompts Inteligentes</h3>
+                    <img src="Certificados/Certificado Prompts.jpg" alt="Criando Prompts Inteligentes" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
+                <div class="cert-item" onclick="openModal('Certificados/Certificado PowerBI.jpg')">
+                    <h3>Fundamento de Power BI</h3>
+                    <img src="Certificados/Certificado PowerBI.jpg" alt="Power BI" class="cert-img">
+                    <span class="click-hint"><i class="fas fa-search-plus"></i> Clique para ampliar</span>
+                </div>
+
             </div>
         </section>
 
@@ -242,6 +501,114 @@
     </div>
 
     <script>
+        /* ----------------------------------------------------
+           SCRIPT DE ANIMAÇÃO DO FUNDO (REDE DE DADOS)
+        ----------------------------------------------------- */
+        const canvas = document.getElementById('data-network');
+        const ctx = canvas.getContext('2d');
+
+        let particlesArray;
+
+        // Ajusta o tamanho do canvas para a tela toda
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Classe de partícula (os pontos de dados)
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.directionX = (Math.random() * 0.4) - 0.2; // Velocidade lenta
+                this.directionY = (Math.random() * 0.4) - 0.2;
+                this.size = Math.random() * 2 + 1; // Tamanho do ponto
+                this.color = '#00d4ff'; // Cor Neon
+            }
+
+            // Método para desenhar
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+
+            // Método para atualizar a posição
+            update() {
+                // Verificar bordas da tela para inverter direção
+                if (this.x > canvas.width || this.x < 0) {
+                    this.directionX = -this.directionX;
+                }
+                if (this.y > canvas.height || this.y < 0) {
+                    this.directionY = -this.directionY;
+                }
+
+                // Mover
+                this.x += this.directionX;
+                this.y += this.directionY;
+
+                // Redesenhar
+                this.draw();
+            }
+        }
+
+        // Criar as partículas
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 9000; // Densidade
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        // Animação Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+            connect(); // Desenha as linhas
+        }
+
+        // Função para conectar os pontos próximos
+        function connect() {
+            let opacityValue = 1;
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    // Teorema de pitágoras para distância
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) +
+                                   ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+                    
+                    if (distance < (canvas.width / 7) * (canvas.height / 7)) {
+                        opacityValue = 1 - (distance / 20000);
+                        ctx.strokeStyle = 'rgba(0, 212, 255,' + opacityValue + ')';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Redimensionar canvas se a janela mudar de tamanho
+        window.addEventListener('resize', function() {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            init();
+        });
+
+        // Iniciar
+        init();
+        animate();
+
+        /* ----------------------------------------------------
+           RESTANTE DOS SCRIPTS (Idioma e Modal)
+        ----------------------------------------------------- */
+
+        // Função de Idioma
         function toggleLanguage() {
             const ptElements = document.querySelectorAll('.lang-pt');
             const enElements = document.querySelectorAll('.lang-en');
@@ -256,6 +623,25 @@
                 enElements.forEach(el => el.style.display = 'block');
                 btn.innerText = 'EN / PT';
             }
+        }
+
+        // Função do Modal (Zoom)
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+
+        function openModal(src) {
+            modal.style.display = "flex";
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+            modalImg.src = src;
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 300);
         }
     </script>
 </body>
